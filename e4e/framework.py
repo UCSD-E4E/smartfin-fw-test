@@ -73,4 +73,5 @@ class Smartfin:
 
     def waitForMatch(self, regex, timeout:float = None):
         self.__match = regex
-        return self.__matchEvent.wait(timeout)
+        retval = self.__matchEvent.wait(timeout)
+        self.__matchEvent.clear()

@@ -15,34 +15,31 @@ class SF_DeployCycle(e4e.test.Test):
     def test(self, fin:e4e.framework.Smartfin):
         DEPLOYMENT_TIME = 180
         for trial in range(20):
-            try:
-                startTime = dt.datetime.now(pytz.utc)
-                fin.startDeployment()
-                time.sleep(DEPLOYMENT_TIME)
-                fin.stopDeployment()
-                assert(fin.waitForMatch('Next State: STATE_DEEP_SLEEP', 6000))
-                df = e4e.dataEndpoint.getData('credentials.json')
-                thisDeploymentData = df[df['Publish Timestamp'] > startTime]
+            startTime = dt.datetime.now(pytz.utc)
+            fin.startDeployment()
+            time.sleep(DEPLOYMENT_TIME)
+            fin.stopDeployment()
+            assert(fin.waitForMatch('Next State: STATE_DEEP_SLEEP', 6000))
+            df = e4e.dataEndpoint.getData('credentials.json')
+            thisDeploymentData = df[df['Publish Timestamp'] > startTime]
 
-                sessionTimeStr = startTime.strftime("%Y.%m.%d.%H.%M.%S.%f")
-                sessionFileName = "Sfin-%s-%s.log" % (fin.sfid, sessionTimeStr)
-                with open(os.path.join(fin.results_dir, sessionFileName), 'w') as dataFile:
-                    for record in thisDeploymentData['data']:
-                        dataFile.write(record)
-                        dataFile.write('\n')
-                        
-                data = []
+            sessionTimeStr = startTime.strftime("%Y.%m.%d.%H.%M.%S.%f")
+            sessionFileName = "Sfin-%s-%s.log" % (fin.sfid, sessionTimeStr)
+            with open(os.path.join(fin.results_dir, sessionFileName), 'w') as dataFile:
                 for record in thisDeploymentData['data']:
-                    assert(record and record != None)
-                    ensembleList = e4e.decoder.decodeRecord(record)
-                    data.extend(ensembleList)
+                    dataFile.write(record)
+                    dataFile.write('\n')
+                    
+            data = []
+            for record in thisDeploymentData['data']:
+                assert(record and record != None)
+                ensembleList = e4e.decoder.decodeRecord(record)
+                data.extend(ensembleList)
 
-                df = pd.DataFrame(data)
+            df = pd.DataFrame(data)
 
-                # Check that the logged data is within 10 seconds of the actual deployment time
-                assert(abs((max(df['timestamp']) - min(df['timestamp'])) - DEPLOYMENT_TIME) < 10)
-            except Exception as e:
-                print(e)
+            # Check that the logged data is within 10 seconds of the actual deployment time
+            assert(abs((max(df['timestamp']) - min(df['timestamp'])) - DEPLOYMENT_TIME) < 10)
 
     def cleanup(self, fin:e4e.framework.Smartfin):
         pass
