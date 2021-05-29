@@ -67,9 +67,12 @@ if __name__ == "__main__":
                 testInstance = testClass(fin)
                 try:
                     testInstance.test(fin)
+                    print("%s completed" % (selectedTestModule))
+                except Exception as e:
+                    print("%s failed" % (selectedTestModule))
+                    raise e
                 finally:
                     testInstance.cleanup(fin)
-                    print("%s completed" % (selectedTestModule))
         except Exception as e:
             print(e)
             traceback.print_exc()
