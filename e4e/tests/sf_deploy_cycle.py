@@ -22,6 +22,7 @@ class SF_DeployCycle(e4e.test.Test):
             assert(fin.waitForMatch('Next State: STATE_DEEP_SLEEP', 6000))
             df = e4e.dataEndpoint.getData('credentials.json')
             thisDeploymentData = df[df['Publish Timestamp'] > startTime]
+            assert(len(thisDeploymentData) < 11)
 
             sessionTimeStr = startTime.strftime("%Y.%m.%d.%H.%M.%S.%f")
             sessionFileName = "Sfin-%s-%s.log" % (fin.sfid, sessionTimeStr)
