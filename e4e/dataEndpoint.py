@@ -38,5 +38,6 @@ def getData(credentialsFile):
     df['Publish Timestamp'] = [timezone.localize(dt.datetime.strptime(timestamp.strip('Z') + '000', "%Y-%m-%dT%H:%M:%S.%f")) for timestamp in df['published_at']]
     return df
 
-df = getData('credentials.json')
-IPython.embed()
+if __name__ == "__main__":
+    df = getData('credentials.json')
+    IPython.embed()

@@ -3,7 +3,6 @@ import pkgutil
 from e4e.tests import *
 import e4e.test
 import os
-import IPython
 import importlib
 import yaml
 import e4e.framework
@@ -66,9 +65,11 @@ if __name__ == "__main__":
                 sfid=devices[selectedDevice]['sfid']) as fin:
                 testClass = getattr(modulesource, testNames[selectedTestIdx])
                 testInstance = testClass(fin)
-                testInstance.test(fin)
-                testInstance.cleanup(fin)
-                print("%s completed" % (selectedTestModule))
+                try:
+                    testInstance.test(fin)
+                finally:
+                    testInstance.cleanup(fin)
+                    print("%s completed" % (selectedTestModule))
         except Exception as e:
             print(e)
             traceback.print_exc()

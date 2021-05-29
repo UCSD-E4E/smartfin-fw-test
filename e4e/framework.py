@@ -4,25 +4,29 @@ import serial
 import logging
 import os
 import threading
+import re
 
 WET_DRY_PIN = 37
 
 class Smartfin:
     def __init__(self, port:str, results_dir:str, name:str, sfid=str):
         self._portName = port
-        self._results_dir = results_dir
-        self._name = name
-        self._sfid = sfid
+        self.results_dir = results_dir
+        self.name = name
+        self.sfid = sfid
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
         self._runSerialMonitor = True
+        self.__match = None
+        self.__matchEvent = threading.Event()
 
     def __enter__(self):
-        self._handler = logging.FileHandler(os.path.join(self._results_dir, self._name + ".log"))
+        self._handler = logging.FileHandler(os.path.join(self.results_dir, self.name + ".log"))
         self._handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s")
         self._handler.setFormatter(formatter)
         self.logger.addHandler(self._handler)
+        self.__match = None
 
         self._port = serial.Serial(self._portName, baudrate=115200)
         self._port.timeout = 1
@@ -61,3 +65,12 @@ class Smartfin:
             if self._port.inWaiting():
                 line = self._port.readline()
                 self.logger.info("Serial - %s" % (line))
+                if self.__match:
+                    matches = re.findall(self.__match, line.decode(errors='ignore'))
+                    if len(matches) > 0:
+                        self.__match = None
+                        self.__matchEvent.set()
+
+    def waitForMatch(self, regex, timeout:float = None):
+        self.__match = regex
+        return self.__matchEvent.wait(timeout)
