@@ -1,0 +1,6 @@
+smartfin1:
+  port: /dev/ttyACM0
+  sfid: 2f0019000f47373333353132
+smartfin5:
+  port: /dev/ttyACM0
+  sfid: None
