@@ -5,6 +5,10 @@ import logging
 import os
 import threading
 import re
+import datetime as dt
+import pytz
+import e4e.dataEndpoint
+import pandas as pd
 
 WET_DRY_PIN = 37
 
@@ -19,6 +23,7 @@ class Smartfin:
         self._runSerialMonitor = True
         self.__match = None
         self.__matchEvent = threading.Event()
+        self.__deploymentStartTime = None
 
     def __enter__(self):
         self._handler = logging.FileHandler(os.path.join(self.results_dir, self.name + ".log"))
@@ -55,6 +60,7 @@ class Smartfin:
     def startDeployment(self):
         GPIO.output(WET_DRY_PIN, GPIO.HIGH)
         self.logger.info("Wet/Dry Sensor HIGH")
+        self.__deploymentStartTime = dt.datetime.now(pytz.utc)
 
     def stopDeployment(self):
         GPIO.output(WET_DRY_PIN, GPIO.LOW)
@@ -75,3 +81,20 @@ class Smartfin:
         self.__match = regex
         retval = self.__matchEvent.wait(timeout)
         self.__matchEvent.clear()
+
+    def getDeploymentData(self, credentials:str, startTime:dt.datetime = None) -> pd.DataFrame:
+        df = e4e.dataEndpoint.getData(credentials)
+        if startTime is None:
+            return df[df['Publish Timestamp'] > self.__deploymentStartTime]
+        else:
+            return df[df['Publish Timestamp'] > startTime]
+
+    def saveDeploymentData(self, df:pd.DataFrame):
+        sessionTimeStr = self.__deploymentStartTime.strftime("%Y.%m.%d.%H.%M.%S.%f")
+        sessionFileName = "Sfin-%s-%s.csv" % (self.sfid, sessionTimeStr)
+        df.to_csv(os.path.join(self.results_dir, sessionFileName))
+        sessionFileName = "Sfin-%s-%s.log" % (self.sfid, sessionTimeStr)
+        with open(os.path.join(self.results_dir, sessionFileName), 'w') as dataFile:
+            for record in df['data']:
+                dataFile.write(record)
+                dataFile.write('\n')
