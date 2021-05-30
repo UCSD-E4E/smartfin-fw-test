@@ -6,7 +6,7 @@ import datetime as dt
 import pytz
 import e4e.decoder
 import pandas as pd
-import os
+import traceback
 
 class SF_DeployCycle(e4e.test.Test):
     def __init__(self, fin:e4e.framework.Smartfin):
@@ -19,28 +19,30 @@ class SF_DeployCycle(e4e.test.Test):
             fin.startDeployment()
             time.sleep(DEPLOYMENT_TIME)
             fin.stopDeployment()
-            assert(fin.waitForMatch('Next State: STATE_DEEP_SLEEP', 6000))
-            df = e4e.dataEndpoint.getData('credentials.json')
-            thisDeploymentData = df[df['Publish Timestamp'] > startTime]
-            assert(len(thisDeploymentData) < 11)
+            fin.waitForMatch('Next State: STATE_DEEP_SLEEP', 6000)
+            df = fin.getDeploymentData('credentials.json')
+            assert(len(df) < 11)
 
-            sessionTimeStr = startTime.strftime("%Y.%m.%d.%H.%M.%S.%f")
-            sessionFileName = "Sfin-%s-%s.log" % (fin.sfid, sessionTimeStr)
-            with open(os.path.join(fin.results_dir, sessionFileName), 'w') as dataFile:
-                for record in thisDeploymentData['data']:
-                    dataFile.write(record)
-                    dataFile.write('\n')
-                    
+            fin.saveDeploymentData(df)
+
             data = []
-            for record in thisDeploymentData['data']:
-                assert(record and record != None)
-                ensembleList = e4e.decoder.decodeRecord(record)
-                data.extend(ensembleList)
+            for record in df['data']:
+                try:                    
+                    assert(record and record != None)
+                    ensembleList = e4e.decoder.decodeRecord(record)
+                    data.extend(ensembleList)
+                except Exception as e:
+                    print(record)
+                    print(e)
+                    traceback.print_exc()
+                    
+            try:
+                df = pd.DataFrame(data)
 
-            df = pd.DataFrame(data)
-
-            # Check that the logged data is within 10 seconds of the actual deployment time
-            assert(abs((max(df['timestamp']) - min(df['timestamp'])) - DEPLOYMENT_TIME) < 10)
+                # Check that the logged data is within 10 seconds of the actual deployment time
+                assert(abs((max(df['timestamp']) - min(df['timestamp'])) - DEPLOYMENT_TIME) < 10)
+            except Exception as e:
+                print(df)
 
     def cleanup(self, fin:e4e.framework.Smartfin):
         pass
