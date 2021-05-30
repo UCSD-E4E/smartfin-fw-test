@@ -2,6 +2,8 @@
 import struct
 import base64
 from typing import List
+import pandas as pd
+import numpy as np
 
 def decodeRecord(record:str)->List:
     packet = base64.b85decode(record)
@@ -106,6 +108,25 @@ def decodePacket(packet:bytes)->List:
             ensemble['dataType'] = dataType
             packetList.append(ensemble)
     return packetList
+
+def convertToSI(df:pd.DataFrame):
+    df['Temperature'] = df['temp+water'] / 333.87 + 21.0
+    waterDetect = list(df['Temperature'])
+    for i in range(len(waterDetect)):
+        if not np.isnan(waterDetect[i]):
+            waterDetect[i] = (waterDetect[i] >= 0)
+    df['Water Detect'] = waterDetect
+    df['X Acceleration'] = df['xAcc'] / 16384
+    df['Y Acceleration'] = df['yAcc'] / 16384
+    df['Z Acceleration'] = df['zAcc'] / 16384
+    df['X Angular Velocity'] = df['xGyro'] / 131.072
+    df['Y Angular Velocity'] = df['yGyro'] / 131.072
+    df['Z Angular Velocity'] = df['zGyro'] / 131.072
+    df['X Magnetic Field'] = df['xMag'] * 0.15
+    df['Y Magnetic Field'] = df['yMag'] * 0.15
+    df['Z Magnetic Field'] = df['zMag'] * 0.15
+    return df
+
 
 if __name__ == "__main__":
     ensembles = []
