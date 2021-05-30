@@ -81,6 +81,7 @@ class Smartfin:
         self.__match = regex
         retval = self.__matchEvent.wait(timeout)
         self.__matchEvent.clear()
+        return retval
 
     def getDeploymentData(self, credentials:str, startTime:dt.datetime = None) -> pd.DataFrame:
         df = e4e.dataEndpoint.getData(credentials)
