@@ -1,3 +1,4 @@
 - e4e.tests.sf_deploy_cycle.SF_DeployCycle
 - e4e.tests.smartfin_fw2_2.GPS_Timestamp_Test
 - e4e.tests.smartfin_fw2_10.smartfin_fw2_10
+- e4e.tests.smartfin_fw_test_2.smartfin_fw_test_2

@@ -9,8 +9,36 @@ import datetime as dt
 import pytz
 import e4e.dataEndpoint
 import pandas as pd
+import enum
+from typing import List
+import html
 
 WET_DRY_PIN = 37
+
+class SMARTFIN_STATE(enum.Enum):
+    STATE_NULL=0
+    STATE_DEEP_SLEEP=1
+    STATE_SESSION_INIT=2
+    STATE_DEPLOYED=3
+    STATE_UPLOAD=4
+    STATE_CLI=5
+    STATE_MFG_TEST=6
+    STATE_TMP_CAL=7
+    STATE_CHARGE=8
+
+SMARTFIN_STATE_strMap = {
+    SMARTFIN_STATE.STATE_NULL: "UNKNOWN",
+    SMARTFIN_STATE.STATE_DEEP_SLEEP: 'STATE_DEEP_SLEEP',
+    SMARTFIN_STATE.STATE_SESSION_INIT: 'STATE_SESSION_INIT',
+    SMARTFIN_STATE.STATE_DEPLOYED: 'STATE_DEPLOYED',
+    SMARTFIN_STATE.STATE_UPLOAD: 'STATE_UPLOAD',
+    SMARTFIN_STATE.STATE_CLI: 'STATE_CLI',
+    SMARTFIN_STATE.STATE_MFG_TEST: 'STATE_MFG_TEST',
+    SMARTFIN_STATE.STATE_TMP_CAL: 'STATE_TMP_CAL',
+    SMARTFIN_STATE.STATE_CHARGE: 'STATE_CHARGE'
+}
+
+SMARTFIN_STATE_stateMap = {value: key for key, value in SMARTFIN_STATE_strMap.items()}
 
 class Smartfin:
     def __init__(self, port:str, results_dir:str, name:str, sfid=str):
@@ -24,6 +52,9 @@ class Smartfin:
         self.__match = None
         self.__matchEvent = threading.Event()
         self.__deploymentStartTime = None
+        self.__matches = []
+        self.__currentState = SMARTFIN_STATE.STATE_NULL
+        self.__data = []
 
     def __enter__(self):
         self._handler = logging.FileHandler(os.path.join(self.results_dir, self.name + ".log"))
@@ -32,6 +63,8 @@ class Smartfin:
         self._handler.setFormatter(formatter)
         self.logger.addHandler(self._handler)
         self.__match = None
+        self.__currentState = SMARTFIN_STATE.STATE_NULL
+        self.__data = []
 
         self._port = serial.Serial(self._portName, baudrate=115200)
         self._port.timeout = 1
@@ -69,13 +102,29 @@ class Smartfin:
     def serialMonitor(self):
         while self._runSerialMonitor:
             if self._port.inWaiting():
-                line = self._port.readline()
-                self.logger.info("Serial - %s" % (line))
+                line = self._port.readline().decode(errors='ignore')
+                self.logger.info("Serial - %s" % (line.strip()))
                 if self.__match:
-                    matches = re.findall(self.__match, line.decode(errors='ignore'))
+                    matches = re.findall(self.__match, line)
                     if len(matches) > 0:
                         self.__match = None
+                        self.__matches.extend(matches)
                         self.__matchEvent.set()
+
+                stateMatch = re.findall('Initializing State.*', line)
+                if len(stateMatch) == 1:
+                    self.__currentState = SMARTFIN_STATE_stateMap[line.split()[-1].strip()]
+                
+                if self.__currentState == SMARTFIN_STATE.STATE_UPLOAD:
+                    uploadDataMatch = re.findall('Uploaded record', line)
+                    if len(uploadDataMatch) > 0:
+                        self.__data.append(line.strip('Uploaded record').strip())
+
+    def getSerialData(self)->List[str]:
+        return self.__data
+
+    def getCurrentState(self)->SMARTFIN_STATE:
+        return self.__currentState
 
     def waitForMatch(self, regex, timeout:float = None):
         self.__match = regex
@@ -83,12 +132,21 @@ class Smartfin:
         self.__matchEvent.clear()
         return retval
 
+    def waitForGetMatch(self, regex, timeout:float=None):
+        self.__match = regex
+        self.__matches = []
+        assert(self.__matchEvent.wait(timeout))
+        self.__matchEvent.clear()
+        return self.__matches
+
     def getDeploymentData(self, credentials:str, startTime:dt.datetime = None) -> pd.DataFrame:
         df = e4e.dataEndpoint.getData(credentials)
         if startTime is None:
-            return df[df['Publish Timestamp'] > self.__deploymentStartTime]
-        else:
-            return df[df['Publish Timestamp'] > startTime]
+            startTime = self.__deploymentStartTime
+
+        df = df[df['Publish Timestamp'] > startTime]
+        df['data'] = [html.unescape(s) for s in df['data']]
+        return df
 
     def saveDeploymentData(self, df:pd.DataFrame):
         sessionTimeStr = self.__deploymentStartTime.strftime("%Y.%m.%d.%H.%M.%S.%f")

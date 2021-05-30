@@ -27,22 +27,14 @@ class SF_DeployCycle(e4e.test.Test):
 
             data = []
             for record in df['data']:
-                try:                    
-                    assert(record and record != None)
-                    ensembleList = e4e.decoder.decodeRecord(record)
-                    data.extend(ensembleList)
-                except Exception as e:
-                    print(record)
-                    print(e)
-                    traceback.print_exc()
+                assert(record and record != None)
+                ensembleList = e4e.decoder.decodeRecord(record)
+                data.extend(ensembleList)
                     
-            try:
-                df = pd.DataFrame(data)
+            df = pd.DataFrame(data)
 
-                # Check that the logged data is within 10 seconds of the actual deployment time
-                assert(abs((max(df['timestamp']) - min(df['timestamp'])) - DEPLOYMENT_TIME) < 10)
-            except Exception as e:
-                print(df)
+            # Check that the logged data is within 10 seconds of the actual deployment time
+            assert(abs((max(df['timestamp']) - min(df['timestamp'])) - DEPLOYMENT_TIME) < 10)
 
     def cleanup(self, fin:e4e.framework.Smartfin):
         pass
