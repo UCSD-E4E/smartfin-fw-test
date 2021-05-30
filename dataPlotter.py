@@ -6,19 +6,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import glob
-import IPython
-import traceback
+import argparse
 
 def plotFile(fileName:str)->str:
     ensembles = []
     with open(fileName, 'r') as dataFile:
         for line in dataFile:
-            try:
-                ensembles.extend(e4e.decoder.decodeRecord(line.strip()))
-            except Exception as e:
-                traceback.print_exc()
-                print(e)
-                IPython.embed()
+            ensembles.extend(e4e.decoder.decodeRecord(line.strip()))
 
     df = pd.DataFrame(ensembles)
     df = e4e.decoder.convertToSI(df)
@@ -133,7 +127,15 @@ def plotFile(fileName:str)->str:
 
 
 if __name__ == "__main__":
-    folder = '/home/ntlhui/workspace/smartfin-fw-test/test_results/smartfin5_SF_DeployCycle_2021-05-30-00-54-58/'
+    parser = argparse.ArgumentParser("Smartfin Data Plotter")
+    parser.add_argument('path', default=None, nargs='?')
+    args = parser.parse_args()
+    if args.path:
+        folder = args.path
+    else:
+        print("Enter path:")
+        folder = input()
+    assert(os.path.isdir(folder))
     for logFile in glob.glob(os.path.join(folder, 'Sfin*.log')):
-        print("Graphing %s", logFile)
+        print("Graphing %s" % logFile)
         plotFile(logFile)
