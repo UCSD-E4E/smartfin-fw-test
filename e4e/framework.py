@@ -12,6 +12,7 @@ import pandas as pd
 import enum
 from typing import List
 import html
+import time
 
 WET_DRY_PIN = 37
 
@@ -55,6 +56,8 @@ class Smartfin:
         self.__matches = []
         self.__currentState = SMARTFIN_STATE.STATE_NULL
         self.__data = []
+        self.__response = b''
+        self.__recordResponse = False
 
     def __enter__(self):
         self._handler = logging.FileHandler(os.path.join(self.results_dir, self.name + ".log"))
@@ -65,6 +68,8 @@ class Smartfin:
         self.__match = None
         self.__currentState = SMARTFIN_STATE.STATE_NULL
         self.__data = []
+        self.__response = b''
+        self.__recordResponse = False
 
         self._port = serial.Serial(self._portName, baudrate=115200)
         self._port.timeout = 1
@@ -90,6 +95,22 @@ class Smartfin:
         self._port.close()
         GPIO.cleanup()
 
+    def reset(self):
+        self._runSerialMonitor = False
+        self._serialMonitorThread.join()
+        self.logger.info("Stopping serial monitor")
+        self._port.close()
+
+        # reset - currently not supported
+        print("Manually Reset Smartfin")
+        input()
+
+        self._port.open()
+        self.logger.info("Starting serial monitor")
+        self._runSerialMonitor = True
+        self._serialMonitorThread = threading.Thread(target=self.serialMonitor)
+        self._serialMonitorThread.start()
+
     def startDeployment(self):
         GPIO.output(WET_DRY_PIN, GPIO.HIGH)
         self.logger.info("Wet/Dry Sensor HIGH")
@@ -102,8 +123,9 @@ class Smartfin:
     def serialMonitor(self):
         while self._runSerialMonitor:
             if self._port.inWaiting():
-                line = self._port.readline().decode(errors='ignore')
-                self.logger.info("Serial - %s" % (line.strip()))
+                data = self._port.readline()
+                line = data.decode(errors='ignore')
+                self.logger.info("Serial Rx - %s" % (line.strip()))
                 if self.__match:
                     matches = re.findall(self.__match, line)
                     if len(matches) > 0:
@@ -119,6 +141,19 @@ class Smartfin:
                     uploadDataMatch = re.findall('Uploaded record', line)
                     if len(uploadDataMatch) > 0:
                         self.__data.append(line.strip('Uploaded record').strip())
+
+                if self.__recordResponse:
+                    self.__response += data
+
+    def sendCommand(self, command:str, responsePattern:str="", timeout:float=None)->bytes:
+        self.__match = responsePattern
+        self.__response = b''
+        self.__recordResponse = True
+        self.logger.info("Serial Tx - %s" % (command))
+        self._port.write(command.encode())
+        assert(self.__matchEvent.wait(timeout))
+        self.__matchEvent.clear()
+        return self.__response
 
     def getSerialData(self)->List[str]:
         return self.__data
