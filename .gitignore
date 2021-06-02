@@ -133,3 +133,4 @@ aa2.pickle
 credentials.json
 
 test_results/
+**.csv
