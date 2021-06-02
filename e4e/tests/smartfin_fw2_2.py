@@ -8,7 +8,7 @@ import e4e.dataEndpoint
 
 class GPS_Timestamp_Test(e4e.test.Test):
     def __init__(self, fin:e4e.framework.Smartfin):
-        pass
+        fin.reset()
 
     def test(self, fin:e4e.framework.Smartfin):
         startTime = dt.datetime.now(pytz.utc)
@@ -32,4 +32,4 @@ class GPS_Timestamp_Test(e4e.test.Test):
 
 
     def cleanup(self, fin:e4e.framework.Smartfin):
-        pass
+        fin.reset()
