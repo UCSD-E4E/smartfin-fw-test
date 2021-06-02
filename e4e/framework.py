@@ -15,6 +15,7 @@ import html
 import time
 
 WET_DRY_PIN = 37
+RESET_PIN = 35
 
 class SMARTFIN_STATE(enum.Enum):
     STATE_NULL=0
@@ -82,7 +83,9 @@ class Smartfin:
 
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(WET_DRY_PIN, GPIO.OUT)
+        GPIO.setup(RESET_PIN, GPIO.OUT)
         GPIO.output(WET_DRY_PIN, GPIO.LOW)
+        GPIO.output(RESET_PIN, GPIO.HIGH)
         self.logger.info("Wet/Dry Sensor LOW")
         return self
 
@@ -102,8 +105,10 @@ class Smartfin:
         self._port.close()
 
         # reset - currently not supported
-        print("Manually Reset Smartfin")
-        input()
+        GPIO.output(RESET_PIN, GPIO.LOW)
+        time.sleep(1)
+        GPIO.output(RESET_PIN, GPIO.HIGH)
+        time.sleep(1)
 
         self._port.open()
         self.logger.info("Starting serial monitor")
