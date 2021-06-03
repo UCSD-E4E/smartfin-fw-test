@@ -9,7 +9,7 @@ import e4e.framework
 import traceback
 import datetime as dt
 
-TEST_RESULTS_DIR_FMT = "{name}_{test}_{timestamp}"
+TEST_RESULTS_DIR_FMT = "{name}_{timestamp}_{test}"
 
 if __name__ == "__main__":
     with open(os.path.join('.', 'settings.yaml'), 'r') as stream:
