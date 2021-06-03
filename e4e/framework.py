@@ -214,6 +214,14 @@ class Smartfin:
                 dataFile.write(record)
                 dataFile.write('\n')
 
+    def saveSerialData(self, data:List[str]):
+        sessionTimeStr = self.__deploymentStartTime.strftime("%Y.%m.%d.%H.%M.%S.%f")
+        sessionFileName = "Sfin-%s-%s.log" % (self.sfid, sessionTimeStr)
+        with open(os.path.join(self.results_dir, sessionFileName), 'w') as dataFile:
+            for record in data:
+                dataFile.write(record)
+                dataFile.write('\n')
+
     def verifyEqual(self, expectedValue, actualValue, description):
         self.logger.info("Verify - %s - %s == %s" % (description, actualValue, expectedValue))
         assert(expectedValue == actualValue)
@@ -225,3 +233,12 @@ class Smartfin:
     def verifyApproximate(self, expectedValue, margin, actualValue, description):
         self.logger.info("Verify - %s - %s within %d%% of %s" % (description, actualValue, margin * 100, expectedValue))
         assert(abs((actualValue - expectedValue) / expectedValue) < margin)
+
+    def eraseRecorder(self):
+        self.reset()
+        self.sendCommand('#CLI', '>', 10)
+        response = self.sendCommand('R\r', '>', 10).decode(errors='ignore')
+        while response.splitlines()[-2].find('End of Directory') == -1:
+            self.sendCommand('D\r', ':>', 10)
+            response = self.sendCommand('N\r', '>', 10).decode(errors='ignore')
+        self.reset()
