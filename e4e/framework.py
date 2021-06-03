@@ -59,6 +59,8 @@ class Smartfin:
         self.__data = []
         self.__response = b''
         self.__recordResponse = False
+        self.__stateMatch = None
+        self.__stateMatchEvent = threading.Event()
 
     def __enter__(self):
         self._handler = logging.FileHandler(os.path.join(self.results_dir, self.name + ".log"))
@@ -71,6 +73,7 @@ class Smartfin:
         self.__data = []
         self.__response = b''
         self.__recordResponse = False
+        self.__stateMatch = None
 
         self._port = serial.Serial(self._portName, baudrate=115200)
         self._port.timeout = 1
@@ -141,6 +144,9 @@ class Smartfin:
                 stateMatch = re.findall('Initializing State.*', line)
                 if len(stateMatch) == 1:
                     self.__currentState = SMARTFIN_STATE_stateMap[line.split()[-1].strip()]
+                    if self.__currentState == self.__stateMatch:
+                        self.__stateMatch = None
+                        self.__stateMatchEvent.set()
                 
                 if self.__currentState == SMARTFIN_STATE.STATE_UPLOAD:
                     uploadDataMatch = re.findall('Uploaded record', line)
@@ -167,17 +173,27 @@ class Smartfin:
         return self.__currentState
 
     def waitForMatch(self, regex, timeout:float = None):
+        self.__matchEvent.clear()
         self.__match = regex
         retval = self.__matchEvent.wait(timeout)
         self.__matchEvent.clear()
         return retval
 
     def waitForGetMatch(self, regex, timeout:float=None):
+        self.__matchEvent.clear()
         self.__match = regex
         self.__matches = []
         assert(self.__matchEvent.wait(timeout))
         self.__matchEvent.clear()
         return self.__matches
+
+    def waitForState(self, state:SMARTFIN_STATE, timeout:float=None)->bool:
+        self.__stateMatchEvent.clear()
+        self.__stateMatch = state
+        retval = self.__stateMatchEvent.wait(timeout)
+        self.__stateMatchEvent.clear()
+        return retval
+        
 
     def getDeploymentData(self, credentials:str, startTime:dt.datetime = None) -> pd.DataFrame:
         df = e4e.dataEndpoint.getData(credentials)
@@ -197,3 +213,15 @@ class Smartfin:
             for record in df['data']:
                 dataFile.write(record)
                 dataFile.write('\n')
+
+    def verifyEqual(self, expectedValue, actualValue, description):
+        self.logger.info("Verify - %s - %s == %s" % (description, actualValue, expectedValue))
+        assert(expectedValue == actualValue)
+
+    def verifyWithin(self, expectedValue, margin, actualValue, description):
+        self.logger.info("Verify - %s - %s within +- %s of %s" % (description, actualValue, margin, expectedValue))
+        assert(abs(actualValue - expectedValue) < margin)
+
+    def verifyApproximate(self, expectedValue, margin, actualValue, description):
+        self.logger.info("Verify - %s - %s within %d%% of %s" % (description, actualValue, margin * 100, expectedValue))
+        assert(abs((actualValue - expectedValue) / expectedValue) < margin)
