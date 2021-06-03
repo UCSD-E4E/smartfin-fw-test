@@ -20,7 +20,7 @@ class SF_checkForFWVersion(e4e.test.Test):
     def test(self, fin:e4e.framework.Smartfin):
         startTime = dt.datetime.now(pytz.utc)
         fin.startDeployment()
-        time.sleep(10)
+        time.sleep(60)
         fin.stopDeployment()
         fin.waitForState(e4e.framework.SMARTFIN_STATE.STATE_DEEP_SLEEP)
         df = fin.getSerialData()
