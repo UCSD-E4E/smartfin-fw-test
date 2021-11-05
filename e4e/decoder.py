@@ -116,15 +116,24 @@ def convertToSI(df:pd.DataFrame):
         if not np.isnan(waterDetect[i]):
             waterDetect[i] = (waterDetect[i] >= 0)
     df['Water Detect'] = waterDetect
-    df['X Acceleration'] = df['xAcc'] / 16384
-    df['Y Acceleration'] = df['yAcc'] / 16384
-    df['Z Acceleration'] = df['zAcc'] / 16384
-    df['X Angular Velocity'] = df['xGyro'] / 131.072
-    df['Y Angular Velocity'] = df['yGyro'] / 131.072
-    df['Z Angular Velocity'] = df['zGyro'] / 131.072
-    df['X Magnetic Field'] = df['xMag'] * 0.15
-    df['Y Magnetic Field'] = df['yMag'] * 0.15
-    df['Z Magnetic Field'] = df['zMag'] * 0.15
+    if 'xAcc' in df.columns:
+        df['X Acceleration'] = df['xAcc'] / 16384
+    if 'yAcc' in df.columns:
+        df['Y Acceleration'] = df['yAcc'] / 16384
+    if 'zAcc' in df.columns:
+        df['Z Acceleration'] = df['zAcc'] / 16384
+    if 'xGyro' in df.columns:
+        df['X Angular Velocity'] = df['xGyro'] / 131.072
+    if 'yGyro' in df.columns:
+        df['Y Angular Velocity'] = df['yGyro'] / 131.072
+    if 'zGyro' in df.columns:
+        df['Z Angular Velocity'] = df['zGyro'] / 131.072
+    if 'xMag' in df.columns:
+        df['X Magnetic Field'] = df['xMag'] * 0.15
+    if 'yMag' in df.columns:
+        df['Y Magnetic Field'] = df['yMag'] * 0.15
+    if 'zMag' in df.columns:
+        df['Z Magnetic Field'] = df['zMag'] * 0.15
     return df
 
 
@@ -133,3 +142,4 @@ if __name__ == "__main__":
     with open('e4e/data.txt', 'r') as dataFile:
         for line in dataFile:
             ensembles.append(decodeRecord(line.strip()))
+    print(ensembles)
