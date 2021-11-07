@@ -12,6 +12,7 @@ class SF_Calibrate(e4e.test.Test):
         MEASUREMENT_TIME = 5
 
         super().test(fin)
+        fin.eraseRecorder()
         fin.enterCLI()
         response = fin.sendCommand('C\r\n', ':', 10)
         assert(response.decode().find('Please enter the number of temp cycles') != -1)
