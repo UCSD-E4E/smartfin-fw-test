@@ -6,3 +6,5 @@
 - e4e.tests.smartfin_fw2_18.smartfin_fw2_18_test1
 - e4e.tests.smartfin_fw2_11.SF_NoNetworkUploadUSB
 - e4e.tests.smartfin_fw2_23.SF_checkForFWVersion
+- e4e.tests.smartfin_fw2_14.SF_waterDetect40
+- e4e.tests.smartfin_fw2_14.SF_waterDetectTiming
