@@ -8,7 +8,7 @@
             "name": "Start Test Runner",
             "type": "python",
             "request": "launch",
-            "program": "testRunner",
+            "program": "testRunner.py",
             "console": "integratedTerminal"
         }
     ]
