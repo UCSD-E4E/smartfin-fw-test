@@ -13,6 +13,7 @@ import enum
 from typing import List
 import html
 import time
+import gpiozero
 
 WET_DRY_PIN = 37
 RESET_PIN = 35
@@ -84,11 +85,13 @@ class Smartfin:
         self._serialMonitorThread.start()
 
 
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(WET_DRY_PIN, GPIO.OUT)
-        GPIO.setup(RESET_PIN, GPIO.OUT)
-        GPIO.output(WET_DRY_PIN, GPIO.LOW)
-        GPIO.output(RESET_PIN, GPIO.HIGH)
+        # GPIO.setmode(GPIO.BOARD)
+        # GPIO.setup(WET_DRY_PIN, GPIO.OUT)
+        # GPIO.setup(RESET_PIN, GPIO.OUT)
+        # GPIO.output(WET_DRY_PIN, GPIO.LOW)
+        # GPIO.output(RESET_PIN, GPIO.HIGH)
+        self.wetdry_pin = gpiozero.LED(f'BOARD{WET_DRY_PIN}', initial_value=False)
+        self.reset_pin = gpiozero.LED(f'BOARD{RESET_PIN}', initial_value=True)
         self.logger.info("Wet/Dry Sensor LOW")
         return self
 
@@ -99,7 +102,7 @@ class Smartfin:
         self._handler.close()
         self.logger.removeHandler(self._handler)
         self._port.close()
-        GPIO.cleanup()
+        # GPIO.cleanup()
 
     def reset(self):
         self._runSerialMonitor = False
@@ -107,12 +110,15 @@ class Smartfin:
         self.logger.info("Stopping serial monitor")
         self._port.close()
 
-        # reset - currently not supported
-        GPIO.output(RESET_PIN, GPIO.LOW)
-        time.sleep(1)
-        GPIO.output(RESET_PIN, GPIO.HIGH)
-        self.logger.info("Reset deasserted")
-        time.sleep(1)
+        # # reset - currently not supported
+        # # GPIO.output(RESET_PIN, GPIO.LOW)
+        # self.reset_pin.off()
+        # time.sleep(5)
+        # # GPIO.output(RESET_PIN, GPIO.HIGH)
+        # self.reset_pin.on()
+        # self.logger.info("Reset deasserted")
+        # time.sleep(5)
+        input("Manually reset fin.  Press ENTER when done: ")
 
         self._port.open()
         self.logger.info("Starting serial monitor")
@@ -121,12 +127,14 @@ class Smartfin:
         self._serialMonitorThread.start()
 
     def startDeployment(self):
-        GPIO.output(WET_DRY_PIN, GPIO.HIGH)
+        # GPIO.output(WET_DRY_PIN, GPIO.HIGH)
+        self.wetdry_pin.on()
         self.logger.info("Wet/Dry Sensor HIGH")
         self.__deploymentStartTime = dt.datetime.now(pytz.utc)
 
     def stopDeployment(self):
-        GPIO.output(WET_DRY_PIN, GPIO.LOW)
+        # GPIO.output(WET_DRY_PIN, GPIO.LOW)
+        self.wetdry_pin.off()
         self.logger.info("Wet/Dry Sensor LOW")
 
     def serialMonitor(self):
@@ -247,9 +255,13 @@ class Smartfin:
 
     def eraseRecorder(self):
         self.reset()
-        self.sendCommand('#CLI', '>', 10)
+        self.enterCLI()
         response = self.sendCommand('R\r', '>', 10).decode(errors='ignore')
         while response.splitlines()[-2].find('End of Directory') == -1:
             self.sendCommand('D\r', ':>', 10)
             response = self.sendCommand('N\r', '>', 10).decode(errors='ignore')
         self.reset()
+
+    def enterCLI(self) -> None:
+        self.sendCommand('#CLI', '>', 10)
+
