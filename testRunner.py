@@ -38,7 +38,7 @@ if __name__ == "__main__":
     with open(os.path.join('.', 'e4e', 'tests', 'devices.yaml'), 'r') as stream:
         devices = yaml.safe_load(stream)
     load_plugins()
-    test_classes = list(__all_subclasses(e4e.test.Test))
+    test_classes = sorted(list(__all_subclasses(e4e.test.Test)), key=lambda x: x.__name__)
     
 
 
