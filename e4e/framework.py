@@ -111,6 +111,7 @@ class Smartfin:
         GPIO.output(RESET_PIN, GPIO.LOW)
         time.sleep(1)
         GPIO.output(RESET_PIN, GPIO.HIGH)
+        self.logger.info("Reset deasserted")
         time.sleep(1)
 
         self._port.open()
@@ -188,6 +189,8 @@ class Smartfin:
         return self.__matches
 
     def waitForState(self, state:SMARTFIN_STATE, timeout:float=None)->bool:
+        if self.__currentState == state:
+            return True
         self.__stateMatchEvent.clear()
         self.__stateMatch = state
         retval = self.__stateMatchEvent.wait(timeout)
@@ -225,6 +228,14 @@ class Smartfin:
     def verifyEqual(self, expectedValue, actualValue, description):
         self.logger.info("Verify - %s - %s == %s" % (description, actualValue, expectedValue))
         assert(expectedValue == actualValue)
+
+    def verifyLessThan(self, thresholdValue, actualValue, description):
+        self.logger.info("Verify - %s: %s < %s" % (description, actualValue, thresholdValue))
+        assert(actualValue < thresholdValue)
+
+    def verifyGreaterThan(self, thresholdValue, actualValue, description):
+        self.logger.info("Verify - %s: %s > %s" % (description, actualValue, thresholdValue))
+        assert(actualValue > thresholdValue)
 
     def verifyWithin(self, expectedValue, margin, actualValue, description):
         self.logger.info("Verify - %s - %s within +- %s of %s" % (description, actualValue, margin, expectedValue))
