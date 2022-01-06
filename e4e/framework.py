@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import RPi.GPIO as GPIO
 import serial
 import logging
 import os

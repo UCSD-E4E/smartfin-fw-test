@@ -6,9 +6,16 @@ setup(
     version=e4e.__VERSION__,
     author='UCSD Engineers for Exploration',
     author_email='e4e@eng.ucsd.edu',
-    requires=[
+    install_requires=[
         'pandas',
         'numpy',
         'matplotlib',
-    ]
+        'gpiozero',
+        'pyserial',
+        'google-api-python-client',
+        'google-auth-httplib2',
+        'google-auth-oauthlib',
+        'ipython'
+    ],
+    packages=find_packages()
 )
