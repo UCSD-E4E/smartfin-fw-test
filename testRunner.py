@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import pkgutil
+from e4e.dataEndpoint import SCOPES, authenticate
 import e4e.test
 import os
 import importlib
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     test_classes = sorted(list(__all_subclasses(e4e.test.Test)), key=lambda x: x.__name__)
     
 
-
+    authenticate(SCOPES, 'credentials.json')
     
     while True:
         for i in range(len(devices)):

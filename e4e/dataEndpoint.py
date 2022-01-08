@@ -18,13 +18,15 @@ def authenticate(SCOPES, credentialsPath):
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(credentialsPath, SCOPES)
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_console()
         # Save the credentials for the next runwith open('aa2.pickle', 'wb') as token:
-            pickle.dump(creds, token)
+            with open('aa2.pickle', 'wb') as token:
+                pickle.dump(creds, token)
     return creds
 
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 def getData(credentialsFile):
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+    global SCOPES
     SPREADSHEET_ID = '1UvvFQRp5lwRD6BSit4_Rpjb6enjxjdhKmQNzOmhE1j4'
     DATA_RANGE_NAME = 'Sheet1'
 
